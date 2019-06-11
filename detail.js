@@ -165,10 +165,11 @@ async function getFormationDetailsFromFiles(page) {
 
     if (pdfUrl) {
         const identifier = uuid();
-        fs.mkdirSync(identifier);
+        const absPath = path.join(__dirname, identifier);
+        fs.mkdirSync(absPath);
         await page._client.send('Page.setDownloadBehavior', {
             behavior: 'allow',
-            downloadPath: identifier
+            downloadPath: absPath
         });
 
         let watcher = null;
@@ -280,10 +281,11 @@ async function getAnnualDetailsFromFiles(page) {
     const results = [];
     for (let {year, pdfUrl} of reports) {
         const identifier = uuid();
-        fs.mkdirSync(identifier);
+        const absPath = path.join(__dirname, identifier);
+        fs.mkdirSync(absPath);
         await page._client.send('Page.setDownloadBehavior', {
             behavior: 'allow',
-            downloadPath: identifier
+            downloadPath: absPath
         });
 
         let watcher = null;
