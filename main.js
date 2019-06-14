@@ -2,6 +2,7 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const linkScraper = require("./links");
 const corporationScraper = require("./detail");
+const storageService = require("./storage");
 
 const searchUrl = 'https://prcorpfiling.f1hst.com/CorporationSearch.aspx?rl=true';
 async function main() {
@@ -35,7 +36,9 @@ async function main() {
       }
   
       fs.writeFileSync(`${registerNumber}.json`, JSON.stringify(registryEntry));
+      await storageService.storeCorporations(registryEntry);
     } catch (ex) {
+      console.log(ex);
       console.log(`failure for ${registerNumber}`);
     }
   }

@@ -1,0 +1,7 @@
+{
+    "database": {
+        "endpoint": "sqlserver.cemgcp7amazd.us-east-1.rds.amazonaws.com",
+        "username": "",
+        "password": ""
+    } 
+}

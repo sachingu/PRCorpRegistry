@@ -18,8 +18,9 @@ async function getCorporationData(url, page = null) {
     }
 
     const generalDetails = await getGeneralDetails(url, page);
-    // const formationDetails = await getFormationDetailsFromFiles(page);
+    const formationDetails = await getFormationDetailsFromFiles(page);
     const annualDetails = await getAnnualDetailsFromFiles(page);
+    const balanceSheetDetails = await getBalanceSheetDetailsFromFiles(page);
 
     if (browser) {
         await browser.close();
@@ -27,8 +28,9 @@ async function getCorporationData(url, page = null) {
 
     const result = {
         generalDetails: generalDetails,
-        // ...formationDetails,
-        annualDetails
+        ...formationDetails,
+        annualDetails,
+        balanceSheetDetails
     };
 
     return result;
@@ -228,25 +230,19 @@ async function getAnnualDetailsFromFiles(page) {
             return persons;
         }
 
-        const maFirstIndex = lines.indexOf('Mailing Address');
-        const maSecondIndex = lines.indexOf('Mailing Address', maFirstIndex);
-        const raNameIndex = lines.indexOf('Name');
-        const raEmailIndex = lines.indexOf('Email');
+        const addressFirstIndex = lines.indexOf('Address');
+        const telephoneFirstIndex = lines.indexOf('Telephone');
         const officersIndex = lines.indexOf('Officers');
         const persons = extractAdministratorsFromText(lines.slice(officersIndex, lines.length));
 
-        // const formation = {
-        //     forStreet: lines[maFirstIndex + 1],
-        //     forMail: lines[maFirstIndex + 2],
-        //     forRAStreet: lines[maSecondIndex + 1],
-        //     forRAMail: lines[maSecondIndex + 2],
-        //     forRAName: lines[raNameIndex + 1],
-        //     forRAEMail: lines[raEmailIndex + 1],
-        //     forNature: lines.slice(forNatureIndex + 1, eachAuthLineIndex).join(' ')
-        // }
+        const annDetail = {
+            annName: lines[addressFirstIndex + 1],
+            annStreet: lines[addressFirstIndex + 2],
+            annPhone: lines[telephoneFirstIndex + 1]
+        }
 
         return {
-            // formation,
+            ...annDetail,
             officers: persons.filter(person => person.termExpiration).map((person, idx, filtered) => ({
                 offSeq: filtered.length-idx,
                 offName: person.name,
@@ -261,22 +257,7 @@ async function getAnnualDetailsFromFiles(page) {
         page.waitForNavigation()
     ]);
 
-    const anchors = await page.$$('table.datagrid a');
-    const reports = [];
-    for (let anchorIndex = 0; anchorIndex < anchors.length; anchorIndex++) {
-        const element = anchors[anchorIndex];
-        const text = await page.evaluate(element => element.textContent, element);
-        if (/Annual Report \[EN\]/.test(text)) {
-            const pdfUrl = await page.evaluate(element => element.href, element);
-            const year = await page.evaluate(element => element.parentElement.previousSibling.innerText, element);
-            if (pdfUrl) {
-                reports.push({
-                    year,
-                    pdfUrl
-                });
-            }
-        }
-    }
+    const reports = await getReportLinks(page, /Annual Report \[EN\]/);
 
     const results = [];
     for (let {year, pdfUrl} of reports) {
@@ -327,7 +308,106 @@ async function getAnnualDetailsFromFiles(page) {
     return results;
 }
 
+async function getBalanceSheetDetailsFromFiles(page) {
+    function extractDetailsFromText(lines) {
+        const totalAssetsIndex = lines.indexOf('Total Assets');
+        const liabilityIndex = lines.indexOf('TOTAL LIABILITIES & EQUITY');
+
+        const balanceDetail = {
+            balCurAssets: lines[totalAssetsIndex + 1],
+            balPropEq: lines[totalAssetsIndex + 2],
+            balOthAssets: lines[totalAssetsIndex + 3],
+            balTotAssets: lines[totalAssetsIndex + 4],
+            balCurLiabilities: lines[liabilityIndex + 1],
+            balLTLiabilities: lines[liabilityIndex + 2],
+            balEquity: lines[liabilityIndex + 3],
+            balTLE: lines[liabilityIndex + 4]
+        }
+
+        for (let [key, value] of Object.entries(balanceDetail)) {
+            balanceDetail[key] = Number(value.replace(/[^0-9.-]+/g,''));
+        }
+
+        return balanceDetail;
+    }
+
+    await Promise.all([
+        page.goto('https://prcorpfiling.f1hst.com/CorpInfo/CorpInfoAnnualFilings.aspx?SELECTED_ITEM=ALL'),
+        page.waitForNavigation()
+    ]);
+
+    const reports = await getReportLinks(page, /Balance Sheet Details \[EN\]/);
+    const results = [];
+    for (let {year, pdfUrl} of reports) {
+        const identifier = uuid();
+        const absPath = path.join(__dirname, identifier);
+        fs.mkdirSync(absPath);
+        await page._client.send('Page.setDownloadBehavior', {
+            behavior: 'allow',
+            downloadPath: absPath
+        });
+
+        let watcher = null;
+        let promise = new Promise((resolve, reject) => {
+            let matched = false;
+            watcher = fs.watch(identifier, (eventType, filename) => {
+                if (filename) {
+                    if (!/crdownload$/.test(filename) && !matched) {
+                        matched = true;
+                        const filePath = path.join(identifier, filename);
+
+                        pdfText(filePath, function (err, chunks) {
+                            const details = extractDetailsFromText(chunks);
+                            fs.writeFileSync('text.txt', chunks.join('\n'));
+                            resolve(details);
+                        });
+                    }
+                } else {
+                    console.log('filename not provided');
+                }
+            });
+        });
+
+        try {
+            await page.goto(pdfUrl);
+        } catch (ex) {
+            // swallor the connection aborted exception
+            // console.log(ex);
+        }
+
+        const result = await promise;
+        watcher.close();
+        results.push({
+            year,
+            ...result
+        });
+    }
+
+    return results;
+}
+
+async function getReportLinks(page, nameMatchRegEx) {
+    const anchors = await page.$$('table.datagrid a');
+    const reports = [];
+    for (let anchorIndex = 0; anchorIndex < anchors.length; anchorIndex++) {
+        const element = anchors[anchorIndex];
+        const text = await page.evaluate(element => element.textContent, element);
+        if (nameMatchRegEx.test(text)) {
+            const pdfUrl = await page.evaluate(element => element.href, element);
+            const year = await page.evaluate(element => element.parentElement.previousSibling.innerText, element);
+            if (pdfUrl) {
+                reports.push({
+                    year,
+                    pdfUrl
+                });
+            }
+        }
+    }
+
+    return reports
+}
+
 module.exports.getCorporationData = getCorporationData;
 
 // getCorporationData('https://prcorpfiling.f1hst.com/CorpInfo/CorporationInfo.aspx?c=325210-1511');
-getCorporationData('https://prcorpfiling.f1hst.com/CorpInfo/CorporationInfo.aspx?c=328545-1511');
+// getCorporationData('https://prcorpfiling.f1hst.com/CorpInfo/CorporationInfo.aspx?c=328545-1511');
