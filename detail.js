@@ -54,7 +54,7 @@ async function getGeneralDetails(url, page) {
     let result = {};
     for (let [key, value] of Object.entries(generalDetailSelectors)) {
         try {
-            result[key] = await page.$eval(value, el => el.innerText);
+            result[key] = await page.$eval(value, el => el.innerText.replace("'",'"'));
             // transform Street into Street1, Street2 and Street3
             if (key.endsWith('Street')) {
                 const addressParts = result[key].split('\n');
@@ -67,7 +67,7 @@ async function getGeneralDetails(url, page) {
             }
         } catch (ex) {
             // console.log(`${key} not found for ${url}`);
-            result[key] = undefined;
+            result[key] = '';
         }
     }
 

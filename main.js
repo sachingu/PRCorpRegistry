@@ -36,7 +36,7 @@ async function main() {
       }
   
       fs.writeFileSync(`${registerNumber}.json`, JSON.stringify(registryEntry));
-      await storageService.storeCorporations(registryEntry);
+      await storageService.storeRecordsForRegistry(registryEntry);
     } catch (ex) {
       console.log(ex);
       console.log(`failure for ${registerNumber}`);
