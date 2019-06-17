@@ -186,6 +186,8 @@ async function getFormationDetailsFromFiles(page) {
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
                             fs.writeFileSync(`${identifier}.txt`, chunks.join('\n'));
+                            fs.unlinkSync(filePath);
+                            fs.rmdirSync(absPath);
                             resolve(details);
                         });
                     }
@@ -281,6 +283,8 @@ async function getAnnualDetailsFromFiles(page) {
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
                             fs.writeFileSync('text.txt', chunks.join('\n'));
+                            fs.unlinkSync(filePath);
+                            fs.rmdirSync(absPath);
                             resolve(details);
                         });
                     }
@@ -359,6 +363,8 @@ async function getBalanceSheetDetailsFromFiles(page) {
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
                             fs.writeFileSync('text.txt', chunks.join('\n'));
+                            fs.unlinkSync(filePath);
+                            fs.rmdirSync(absPath);
                             resolve(details);
                         });
                     }
