@@ -95,14 +95,14 @@ async function storeAuthPersons(request, corporationID, authPersons) {
         return;
     }
 
-    const combinedInserts = administrators.map(admin =>
+    const combinedInserts = authPersons.map(autPerson =>
         `INSERT INTO AuthPersons(crpID, autSeq, autName, autStreet, autMail, autEMail, createdAt, updatedAt)
         VALUES  (${corporationID},
-            ${admin.autSeq},
-            ${checkForValue(admin.autName)},
-            ${checkForValue(admin.autStreet)},
-            ${checkForValue(admin.autMail)},
-            ${checkForValue(admin.autEMail)},
+            ${autPerson.autSeq},
+            ${checkForValue(autPerson.autName)},
+            ${checkForValue(autPerson.autStreet)},
+            ${checkForValue(autPerson.autMail)},
+            ${checkForValue(autPerson.autEmail)},
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP);`).join('\n');
     const result = await request.query(combinedInserts);
@@ -122,7 +122,7 @@ async function storeAdministrators(request, corporationID, administrators) {
             ${checkForValue(admin.admTitle)},
             ${checkForValue(admin.admStreet)},
             ${checkForValue(admin.admMail)},
-            ${checkForValue(admin.admEMail)},
+            ${checkForValue(admin.admEmail)},
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP);`).join('\n');
     const result = await request.query(combinedInserts);

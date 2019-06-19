@@ -1,12 +1,12 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-var uuid = require('uuid/v4');
+const uuid = require('uuid/v4');
 const path = require('path');
-var pdfText = require('pdf-text')
-let browser = null;
-var _ = require('lodash');
+const pdfText = require('pdf-text')
+const _ = require('lodash');
 
 async function getCorporationData(url, page = null) {
+    let browser = null;
     if (!page) {
         browser = await puppeteer.launch({
             headless: true
@@ -76,11 +76,11 @@ async function getGeneralDetails(url, page) {
 
 async function getFormationDetailsFromFiles(page) {
     function extractDetailsFromText(lines) {
-        function extractAdministratorsFromText(lines) {
+        function extractPersonsFromText(lines) {
             const persons = [];
-            let nameIndex = null;
             let currentPerson = {};
-            for (index = lines.length; index > 0; index--) {
+            const addressEndRegex = /PR[, ]+[\d-]{5,}$/;
+            for (index = lines.length - 1; index > 0; index--) {
                 let currentLine = lines[index];
                 if (currentLine == 'Title') {
                     currentPerson.title = lines[index + 1];
@@ -88,15 +88,11 @@ async function getFormationDetailsFromFiles(page) {
                     currentPerson.email = lines[index + 1];
                 } else if (currentLine == 'Name') {
                     currentPerson.name = lines[index + 1];
-                    nameIndex = index;
                 } else if (currentLine == 'Mailing Address') {
-                    for (let addressIndex = index + 1; addressIndex <= nameIndex; addressIndex++) {
+                    const indexToCheckUntil = index + 5 < lines.length ? index + 5: lines.length;
+                    for (let addressIndex = index + 1; addressIndex < indexToCheckUntil; addressIndex++) {
                         currentLine = lines[addressIndex];
-                        const addressEndRegex = /PR[, ]+[\d-]{5,}$/;
                         if (addressEndRegex.test(currentPerson.streetAddress) && addressEndRegex.test(currentPerson.mailingAddress)) {
-                            persons.push(currentPerson);
-                            currentPerson = {};
-                            nameIndex = null;
                             break;
                         } else {
                             if (!addressEndRegex.test(currentPerson.streetAddress)) {
@@ -106,6 +102,12 @@ async function getFormationDetailsFromFiles(page) {
                             }
                         }
                     }
+                }
+
+                if (currentPerson.streetAddress && currentPerson.mailingAddress && currentPerson.name && currentPerson.email) {
+                    persons.push(currentPerson);
+                    currentPerson = {};
+                    nameIndex = null;
                 }
             }
     
@@ -118,7 +120,7 @@ async function getFormationDetailsFromFiles(page) {
         const raEmailIndex = lines.indexOf('Email');
         const forNatureIndex = _.findIndex(lines, line => /whose nature of business or purpose is as follows/.test(line));
         const eachAuthLineIndex = _.findIndex(lines, line => /each Authorized Person is as follows/.test(line));
-        const persons = extractAdministratorsFromText(lines.slice(forNatureIndex, lines.length));
+        const persons = extractPersonsFromText(lines.slice(forNatureIndex, lines.length));
 
         const formation = {
             forStreet: lines[maFirstIndex + 1],
@@ -211,7 +213,7 @@ async function getFormationDetailsFromFiles(page) {
 
 async function getAnnualDetailsFromFiles(page) {
     function extractDetailsFromText(lines) {
-        function extractAdministratorsFromText(lines) {
+        function extractOfficersFromText(lines) {
             const persons = [];
             let currentPerson = {};
             for (index = lines.length; index > 0; index--) {
@@ -234,7 +236,7 @@ async function getAnnualDetailsFromFiles(page) {
         const addressFirstIndex = lines.indexOf('Address');
         const telephoneFirstIndex = lines.indexOf('Telephone');
         const officersIndex = lines.indexOf('Officers');
-        const persons = extractAdministratorsFromText(lines.slice(officersIndex, lines.length));
+        const persons = extractOfficersFromText(lines.slice(officersIndex, lines.length));
 
         const annDetail = {
             annName: lines[addressFirstIndex + 1],
