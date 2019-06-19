@@ -185,7 +185,6 @@ async function getFormationDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.writeFileSync(`${identifier}.txt`, chunks.join('\n'));
                             fs.unlinkSync(filePath);
                             fs.rmdirSync(absPath);
                             resolve(details);
@@ -248,7 +247,7 @@ async function getAnnualDetailsFromFiles(page) {
             officers: persons.filter(person => person.termExpiration).map((person, idx, filtered) => ({
                 offSeq: filtered.length-idx,
                 offName: person.name,
-                offEmail: person.title,
+                offTitle: person.title,
                 offMail: person.mailingAddress
             }))
         }
@@ -282,7 +281,6 @@ async function getAnnualDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.writeFileSync('text.txt', chunks.join('\n'));
                             fs.unlinkSync(filePath);
                             fs.rmdirSync(absPath);
                             resolve(details);
@@ -362,7 +360,6 @@ async function getBalanceSheetDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.writeFileSync('text.txt', chunks.join('\n'));
                             fs.unlinkSync(filePath);
                             fs.rmdirSync(absPath);
                             resolve(details);

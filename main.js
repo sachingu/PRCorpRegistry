@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
+const path = require("path");
 const linkScraper = require("./links");
 const corporationScraper = require("./detail");
 const storageService = require("./storage");
@@ -18,6 +19,10 @@ async function main() {
     'accept-language': 'en-US,en;q=0.8'
   });
 
+  const outputDirectory = './output'
+  if (!fs.existsSync(outputDirectory)){
+    fs.mkdirSync(outputDirectory);
+  }
 
   let registryData = [];
   for (registerNumber = rangeStart; registerNumber <= rangeEnd; registerNumber++) {
@@ -35,7 +40,8 @@ async function main() {
         }
       }
   
-      fs.writeFileSync(`${registerNumber}.json`, JSON.stringify(registryEntry));
+      const outputPath = path.join(outputDirectory, `${registerNumber}.json`);
+      fs.writeFileSync(outputPath, JSON.stringify(registryEntry));
       await storageService.storeRecordsForRegistry(registryEntry);
     } catch (ex) {
       console.log(ex);
@@ -43,15 +49,9 @@ async function main() {
     }
   }
 
-  // for (let registryEntry of registryData) {
-  //   for (let corporation of registryEntry.corporations) {
-  //     const corporationDetail = await corporationScraper.getCorporationData(corporation.url, page);
-  //     Object.assign(corporation, corporationDetail);
-  //   }
-  // }
-
   browser.close();
-  fs.writeFileSync("test.json", JSON.stringify(registryData));
+  outputPath = path.join(outputDirectory, `${new Date().getTime()}.json`);
+  fs.writeFileSync(outputPath, JSON.stringify(registryData));
 }
 
 main();
