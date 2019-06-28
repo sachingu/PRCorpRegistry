@@ -12,7 +12,7 @@ async function main() {
   const rangeEnd = !isNaN(args[1]) ? parseInt(args[1]) : rangeStart;
   let registerNumber;
   const browser = await puppeteer.launch({
-    headless: false
+    headless: true
   });
   const page = await browser.newPage();
   await page.setExtraHTTPHeaders({
@@ -39,9 +39,7 @@ async function main() {
     
           for (let corporation of registryEntry.corporations) {
             const corporationDetail = await corporationScraper.getCorporationData(corporation.url, page);
-            //see if corporation exists
-            // var record=storageService.checkForRecord(registerNumber,corporationDetail.generalDetails.crpName.replace("'",""));
-            //console.log(record);
+            //see if corporation exists in db
             storageService.checkForRecord(registerNumber,corporationDetail.generalDetails.crpName.replace("'",""));
             Object.assign(corporation, corporationDetail);
           }
