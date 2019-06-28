@@ -12,7 +12,7 @@ async function main() {
   const rangeEnd = !isNaN(args[1]) ? parseInt(args[1]) : rangeStart;
   let registerNumber;
   const browser = await puppeteer.launch({
-    headless: true
+    headless: false
   });
   const page = await browser.newPage();
   await page.setExtraHTTPHeaders({
@@ -30,19 +30,32 @@ async function main() {
       await page.goto(searchUrl);
       let registryEntry = { registerNumber: registerNumber };
       const corporationLinks = await linkScraper.getCorporationLinksByRegistryNuber(registerNumber, page);
-      if (corporationLinks && corporationLinks.length) {
-        registryEntry.corporations = corporationLinks;
-        registryData.push(registryEntry);
-  
-        for (let corporation of registryEntry.corporations) {
-          const corporationDetail = await corporationScraper.getCorporationData(corporation.url, page);
-          Object.assign(corporation, corporationDetail);
+      //verify if any corporation links found for a particular registry
+      if(typeof corporationLinks !== 'undefined' && corporationLinks.length > 0)
+      {
+        if (corporationLinks && corporationLinks.length) {
+          registryEntry.corporations = corporationLinks;
+          registryData.push(registryEntry);
+    
+          for (let corporation of registryEntry.corporations) {
+            const corporationDetail = await corporationScraper.getCorporationData(corporation.url, page);
+            //see if corporation exists
+            // var record=storageService.checkForRecord(registerNumber,corporationDetail.generalDetails.crpName.replace("'",""));
+            //console.log(record);
+            storageService.checkForRecord(registerNumber,corporationDetail.generalDetails.crpName.replace("'",""));
+            Object.assign(corporation, corporationDetail);
+          }
         }
+    
+        const outputPath = path.join(outputDirectory, `${registerNumber}.json`);
+        fs.writeFileSync(outputPath, JSON.stringify(registryEntry));
+        await storageService.storeRecordsForRegistry(registryEntry);
       }
-  
-      const outputPath = path.join(outputDirectory, `${registerNumber}.json`);
-      fs.writeFileSync(outputPath, JSON.stringify(registryEntry));
-      await storageService.storeRecordsForRegistry(registryEntry);
+      else
+      {
+        console.log("no record found for "+registerNumber);
+      }
+      
     } catch (ex) {
       console.log(ex);
       console.log(`failure for ${registerNumber}`);
