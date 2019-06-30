@@ -2,20 +2,29 @@ const sql = require('mssql');
 const config = require('./config');
 
 async function storeRecordsForRegistry(registryEntry) {
-    await sql.connect(`mssql://${config.database.username}:${config.database.password}@${config.database.endpoint}/${config.database.name}`);
-    const request = new sql.Request();
-    const existingCorporations = await getExistingCorporations(request, registryEntry.registerNumber);
-    const newCorporations = registryEntry.corporations.filter(corp => !existingCorporations.some(existing => existing.crpUrl == corp.url));
-    for (var corporation of newCorporations) {
-        const corporationID = await storeGeneralDetails(request, registryEntry.registerNumber, corporation);
-        await storeFormation(request, corporationID, corporation.formation);
-        await storeAuthPersons(request, corporationID, corporation.authPersons);
-        await storeAdministrators(request, corporationID, corporation.administrators);
-        await storeBalanceSheet(request, corporationID, corporation.balanceSheetDetails);
-        await storeAnnualDetailsAndOfficers(request, corporationID, corporation.annualDetails);
-    }
+    const connectionConfig = {
+        user: config.database.username,
+        password: config.database.password,
+        server: config.database.endpoint,
+        database: config.database.name
+    };
 
-    await sql.close();
+    try {
+        await sql.connect(connectionConfig);
+        const request = new sql.Request();
+        const existingCorporations = await getExistingCorporations(request, registryEntry.registerNumber);
+        const newCorporations = registryEntry.corporations.filter(corp => !existingCorporations.some(existing => existing.crpUrl == corp.url));
+        for (var corporation of newCorporations) {
+            const corporationID = await storeGeneralDetails(request, registryEntry.registerNumber, corporation);
+            await storeFormation(request, corporationID, corporation.formation);
+            await storeAuthPersons(request, corporationID, corporation.authPersons);
+            await storeAdministrators(request, corporationID, corporation.administrators);
+            await storeBalanceSheet(request, corporationID, corporation.balanceSheetDetails);
+            await storeAnnualDetailsAndOfficers(request, corporationID, corporation.annualDetails);
+        }
+    } finally {
+        await sql.close();
+    }
 }
 
 function checkForValue(value) {

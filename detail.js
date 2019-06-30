@@ -4,6 +4,7 @@ const uuid = require('uuid/v4');
 const path = require('path');
 const pdfText = require('pdf-text')
 const _ = require('lodash');
+const rimraf = require('rimraf');
 
 async function getCorporationData(url, page = null) {
     let browser = null;
@@ -187,8 +188,14 @@ async function getFormationDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.unlinkSync(filePath);
-                            fs.rmdirSync(absPath);
+                            while (fs.existsSync(absPath)) {
+                                try {
+                                    rimraf.sync(absPath);
+                                } catch (ex) {
+                                    // it can a take a couple of tries
+                                }
+                            }
+
                             resolve(details);
                         });
                     }
@@ -283,8 +290,14 @@ async function getAnnualDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.unlinkSync(filePath);
-                            fs.rmdirSync(absPath);
+                            while (fs.existsSync(absPath)) {
+                                try {
+                                    rimraf.sync(absPath);
+                                } catch (ex) {
+                                    // it can a take a couple of tries
+                                }
+                            }
+
                             resolve(details);
                         });
                     }
@@ -362,8 +375,14 @@ async function getBalanceSheetDetailsFromFiles(page) {
 
                         pdfText(filePath, function (err, chunks) {
                             const details = extractDetailsFromText(chunks);
-                            fs.unlinkSync(filePath);
-                            fs.rmdirSync(absPath);
+                            while (fs.existsSync(absPath)) {
+                                try {
+                                    rimraf.sync(absPath);
+                                } catch (ex) {
+                                    // it can a take a couple of tries
+                                }
+                            }
+
                             resolve(details);
                         });
                     }
