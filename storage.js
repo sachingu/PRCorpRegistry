@@ -28,7 +28,7 @@ async function storeRecordsForRegistry(registryEntry) {
 }
 
 function checkForValue(value) {
-    return value ? `'${value}'` : null;
+    return value ? `'${value.replace("'", "''")}'` : null;
 }
 
 async function storeGeneralDetails(request, registerNumber, corporation) {
