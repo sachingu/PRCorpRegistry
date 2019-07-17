@@ -2,8 +2,20 @@ const sql = require('mssql');
 const config = require('./config');
 
 async function storeRecordsForRegistry(registryEntry) {
+<<<<<<< HEAD
     try {
         await sql.connect(`mssql://${config.database.username}:${config.database.password}@${config.database.endpoint}/${config.database.name}`);
+=======
+    const connectionConfig = {
+        user: config.database.username,
+        password: config.database.password,
+        server: config.database.endpoint,
+        database: config.database.name
+    };
+
+    try {
+        await sql.connect(connectionConfig);
+>>>>>>> fdd48f498887508a1dec076d4cd85c0043c8c905
         const request = new sql.Request();
         const existingCorporations = await getExistingCorporations(request, registryEntry.registerNumber);
         const newCorporations = registryEntry.corporations.filter(corp => !existingCorporations.some(existing => existing.crpUrl == corp.url));
@@ -15,6 +27,7 @@ async function storeRecordsForRegistry(registryEntry) {
             await storeBalanceSheet(request, corporationID, corporation.balanceSheetDetails);
             await storeAnnualDetailsAndOfficers(request, corporationID, corporation.annualDetails);
         }
+<<<<<<< HEAD
     }
 
     catch (ex) {
@@ -25,10 +38,15 @@ async function storeRecordsForRegistry(registryEntry) {
         await sql.close();
     }
 
+=======
+    } finally {
+        await sql.close();
+    }
+>>>>>>> fdd48f498887508a1dec076d4cd85c0043c8c905
 }
 
 function checkForValue(value) {
-    return value ? `'${value}'` : null;
+    return value ? `'${value.replace("'", "''")}'` : null;
 }
 
 async function storeGeneralDetails(request, registerNumber, corporation) {
