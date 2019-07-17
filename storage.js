@@ -203,10 +203,9 @@ async function checkForRecord(registerNumber, corpName) {
         await sql.close();
     }
 }
-async function fetchRecords(registerNumber) {
+async function fetchRecords(registryNumber) {
     try {
         let registryData={};
-        console.log(registryNumber);
         await sql.connect(`mssql://${config.database.username}:${config.database.password}@${config.database.endpoint}/${config.database.name}`);
         const request = new sql.Request();
         let query = `select cr.* from CORPORATION cr WHERE cr.crpRegisterNo=${registryNumber}`
