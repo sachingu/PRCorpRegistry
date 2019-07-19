@@ -12,23 +12,27 @@ async function getCorporationLinksByRegistryNuber(i, page) {
 
 async function generateLinks(page) {
     let corporationLinks = [];
-    let hasPagerRow = await page.$(".search-grid-pager");
-    let linksData = await getLinksFromCurrentPage(page);
-    corporationLinks.push(...linksData);
-    if (hasPagerRow) {
-        let noOfPages = (await page.$$(".search-grid-pager tr td")).length;
-        for (let i = 2; i <= noOfPages; i++) {
-            let nextPageLink = await page.$('.search-grid-pager tr td:nth-child' + '(' + i + ')');
-            await Promise.all([
-                nextPageLink.click(),
-                page.waitForNavigation({ waitUntil: 'domcontentloaded' })
-            ]);
+    let noRecordFound = ((await page.$eval("span[id$=prCorporationSearch_lblSearchResultCountValue]", x => x.innerText)) == 0);
+    //verify if there is any corporation for the particular registry
+    if (!noRecordFound) {
+        let hasPagerRow = await page.$(".search-grid-pager");
+        let linksData = await getLinksFromCurrentPage(page);
+        corporationLinks.push(...linksData);
+        //check for pages
+        if (hasPagerRow) {
+            let noOfPages = (await page.$$(".search-grid-pager tr td")).length;
+            for (let i = 2; i <= noOfPages; i++) {
+                let nextPageLink = await page.$('.search-grid-pager tr td:nth-child' + '(' + i + ')');
+                await Promise.all([
+                    nextPageLink.click(),
+                    page.waitForNavigation({ waitUntil: 'domcontentloaded' })
+                ]);
 
-            linksData = await getLinksFromCurrentPage(page);
-            corporationLinks.push(...linksData);
+                linksData = await getLinksFromCurrentPage(page);
+                corporationLinks.push(...linksData);
+            }
         }
     }
-
     return corporationLinks;
 }
 

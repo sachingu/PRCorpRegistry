@@ -9,7 +9,7 @@ GO
 CREATE TABLE dbo.Annual
 (
     annID INT IDENTITY NOT NULL PRIMARY KEY, -- primary key column
-    crpID INT NOT NULL FOREIGN KEY REFERENCES Corporation(crpID), -- foreign key
+    crpID INT NOT NULL FOREIGN KEY REFERENCES Corporation(crpID) ON DELETE CASCADE, -- foreign key
     annYear INT NOT NULL,
     annName [NVARCHAR](250) NULL,
     annStreet [NVARCHAR](250) NULL,

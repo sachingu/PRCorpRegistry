@@ -187,4 +187,82 @@ async function getExistingCorporations(request, registerNumber) {
     return result.recordset;
 }
 
+async function checkForRecord(registerNumber, corpName) {
+    await sql.close();
+    try {
+        //close sql connections if any   
+        await sql.connect(`mssql://${config.database.username}:${config.database.password}@${config.database.endpoint}/${config.database.name}`);
+        const request = new sql.Request();
+        let query = `SELECT * FROM CORPORATION WHERE crpRegisterNo=${registerNumber} AND crpName='${corpName}'`;
+        let recordInDB = await request.query(query);
+    }
+    catch (ex) {
+        console.log(ex);
+    }
+    finally {
+        await sql.close();
+    }
+}
+async function fetchRecords(registryNumber) {
+    try {
+        let registryData={};
+        await sql.connect(`mssql://${config.database.username}:${config.database.password}@${config.database.endpoint}/${config.database.name}`);
+        const request = new sql.Request();
+        let query = `select cr.* from CORPORATION cr WHERE cr.crpRegisterNo=${registryNumber}`
+        let crpRecords = await request.query(query);
+        registryData.registerNumber=registryNumber;
+        if((crpRecords.rowsAffected[0])>0)
+        {
+            let crpRecordSets = (Array.from(crpRecords.recordset));
+            let crpIDs = [];
+            registryData.corporations=[];
+            for (let i = 0; i < crpRecordSets.length; i++) {
+                crpIDs.push(crpRecordSets[i].crpID);
+                //TODO: condense these lines and pass the parameters to a method
+                let corporation={};
+                let generalDetails={};
+                corporation.name=crpRecordSets[i].crpName;
+                corporation.url=crpRecordSets[i].crpUrl;
+                generalDetails.crpRegisterNo=crpRecordSets[i].crpRegisterNo;
+                generalDetails.crpName=crpRecordSets[i].crpName;
+                generalDetails.crpClass=crpRecordSets[i].crpClass;
+                generalDetails.crpType=crpRecordSets[i].crpType;
+                generalDetails.crpStatus=crpRecordSets[i].crpStatus;
+                generalDetails.crpJurisdiction=crpRecordSets[i].crpJurisdiction;
+                generalDetails.crpRAName=crpRecordSets[i].crpRAName;
+                generalDetails.crpRAStreet1=crpRecordSets[i].crpRAStreet1;
+                generalDetails.crpRAStreet2=crpRecordSets[i].crpRAStreet2;
+                generalDetails.crpRAStreet3=crpRecordSets[i].crpRAStreet3;
+                generalDetails.crpMAStreet1=crpRecordSets[i].crpMAStreet1;
+                generalDetails.crpMAStreet2=crpRecordSets[i].crpMAStreet2;
+                generalDetails.crpMAStreet3=crpRecordSets[i].crpMAStreet3; 
+                corporation.generalDetails=generalDetails;  
+                corporation.generalDetails=generalDetails;
+            }  
+            query = `select * from FORMATION fr WHERE fr.crpID in (${crpIDs})`;
+            let formationRecords = await request.query(query);
+            query = `SELECT * FROM AuthPersons ap WHERE ap.crpID in (${crpIDs})`;
+            let authPersonsRecords = await request.query(query);
+            query = `SELECT * FROM Administrators ad WHERE ad.crpID in (${crpIDs})`
+            let administratorsRecords = await request.query(query);
+            query = `SELECT * FROM BalanceSheet bs WHERE bs.crpID in (${crpIDs})`;
+            let balanceSheetRecords = await request.query(query);
+            query = `SELECT * FROM Annual an WHERE an.crpID in (${crpIDs})`;
+            let annualRecords = await request.query(query);
+            query = `SELECT * FROM Officers oi WHERE oi.crpID in (${crpIDs})`;
+            let officersRecords = await request.query(query);
+        }
+        // if(crpIdRecords)
+       
+    }
+    catch (ex) {
+        console.log(ex);
+    }
+    finally {
+        await sql.close();
+    }
+}
+
+fetchRecords(322510);
 module.exports.storeRecordsForRegistry = storeRecordsForRegistry;
+module.exports.checkForRecord = checkForRecord;
