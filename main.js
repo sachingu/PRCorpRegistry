@@ -72,5 +72,6 @@ async function initializeBrowser()
   await page.setExtraHTTPHeaders({
     'accept-language': 'en-US,en;q=0.8'
   });
+  await page.setDefaultTimeout(60000);
 }
 main();

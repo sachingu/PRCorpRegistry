@@ -16,6 +16,7 @@ async function getCorporationData(url, page = null) {
         await page.setExtraHTTPHeaders({
             'accept-language': 'en-US,en;q=0.8'
         });
+        await page.setDefaultTimeout(60000);
     }
 
     const generalDetails = await getGeneralDetails(url, page);
